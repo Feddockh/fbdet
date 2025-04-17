@@ -88,7 +88,7 @@ def main():
     Main function to set up the environment by cloning repositories and downloading datasets.
     """
     # Clone the DINOv2 repository
-    clone_repo(DINOV2_REPO_URL, DINOV2_DIR)
+    # clone_repo(DINOV2_REPO_URL, DINOV2_DIR)
 
     # Download and extract the Rivendale dataset
     # download_and_extract_google_drive_zip(RIVENDALE_ZIP_URL, RIVENDALE_DIR)
