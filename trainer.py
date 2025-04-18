@@ -43,8 +43,8 @@ class MultiCamTrainer:
         count = 0
         for batch_idx, batch in enumerate(self.dataloader):
             inputs, targets = {}, {}
-            for cam, data in batch.items():
-                imgs, targs = zip(*data)
+            for cam, sample in batch.items():
+                imgs, targs = zip(*sample)
                 inputs[cam] = [img.to(self.device) for img in imgs]
                 targets[cam] = [{k: v.to(self.device) for k, v in t.items()} for t in targs]
 

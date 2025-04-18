@@ -23,10 +23,6 @@ class MultiCamModel(nn.Module):
         else:
             raise ValueError(f"Unsupported model type: {model_type}")
 
-    def __init__(self, *args, **kwargs):
-        # __new__ returns the actual subclass, so this __init__ won't fire
-        super().__init__()
-
 
 class MultiCamFasterRCNN(nn.Module):
     def __init__(self, cameras: List[str], num_classes: int,
@@ -139,89 +135,3 @@ class MultiCamFasterRCNN(nn.Module):
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-class MultiCamModel(nn.Module):
-    def __init__(self, cameras: List[str], num_classes: int, pretrained: bool = True):
-        """
-        A multi-camera detection model that holds one Faster R-CNN per camera.
-
-        Args:
-            cameras: list of camera names
-            num_classes: number of object classes (including background)
-            pretrained: whether to load pretrained weights
-        """
-        super().__init__()
-        # Create a detection model per camera
-        self.models = nn.ModuleDict()
-        for cam in cameras:
-            # Load base model
-            model = fasterrcnn_resnet50_fpn(pretrained=pretrained)
-            # Replace the classifier head to match num_classes
-            in_features = model.roi_heads.box_predictor.cls_score.in_features
-            model.roi_heads.box_predictor = \
-                type(model.roi_heads.box_predictor)(in_features, num_classes)
-            self.models[cam] = model
-
-    def forward(self, batch: Dict[str, List[torch.Tensor]], targets: Dict[str, List[Dict]] = None):
-        """
-        Forward pass for multi-camera inputs.
-
-        Args:
-            batch: dict mapping camera name to list of image tensors [C,H,W]
-            targets: optional dict mapping camera name to list of target dicts for training
-        Returns:
-            If targets is provided (training): a dict of losses summed across cameras
-            Else: a dict mapping camera name to list of predictions
-        """
-        if self.training:
-            # Training: accumulate losses per camera
-            losses = {}
-            for cam, images in batch.items():
-                cam_targets = targets.get(cam, None)
-                # Faster R-CNN expects (images, targets)
-                cam_losses = self.models[cam](images, cam_targets)
-                # Sum losses into global dict
-                for k, v in cam_losses.items():
-                    losses[f"{cam}_{k}"] = v
-            return losses
-
-        else:
-            # Inference: return predictions per camera
-            preds = {}
-            for cam, images in batch.items():
-                preds[cam] = self.models[cam](images)
-            return preds
-        
-    def save_checkpoint(self, path: str):
-        """
-        Save model state_dict to the given path.
-        """
-        os.makedirs(os.path.dirname(path), exist_ok=True)
-        torch.save({
-            'model_state': self.state_dict(),
-            'cameras': self.cameras,
-        }, path)
-
-    @classmethod
-    def load_checkpoint(cls, path: str, num_classes: int, map_location=None):
-        """
-        Load model from checkpoint .pth file.
-        """
-        checkpoint = torch.load(path, map_location=map_location)
-        cameras = checkpoint['cameras']
-        model = cls(cameras=cameras, num_classes=num_classes, pretrained=False)
-        model.load_state_dict(checkpoint['model_state'])
-        return model
