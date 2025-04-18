@@ -15,8 +15,6 @@ from utils.visual import plot
 
 
 # ------------------------------------------
-# USER‐CONFIGURABLE SECTION (no argparse!)
-# ------------------------------------------
 BASE_DIR      = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR      = os.path.join(BASE_DIR, "erwiam_dataset")
 SETTYPE       = SetType.TRAIN
@@ -32,7 +30,7 @@ DEVICE        = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 def main():
-    # 1) dataset (no random flip!)
+    # Create dataset
     cams = [Camera(name) for name in CAMERAS]
     transforms = v2.Compose([
         v2.Resize(IMG_SIZE, antialias=True)
@@ -44,12 +42,12 @@ def main():
         transforms=transforms
     )
 
-    # 2) model + load checkpoint
+    # Create model and load checkpoint
     model = MultiCamModel(cameras=CAMERAS, num_classes=NUM_CLASSES, pretrained=False)
     model = model.load_checkpoint(CHECKPOINT, num_classes=NUM_CLASSES, map_location=DEVICE)
     model.to(DEVICE).eval()
 
-    # 3) Fetch a sample
+    # Grab a sample
     sample_data = dataset[SAMPLE_INDEX]
     data = {cam: [sample] for cam, sample in sample_data.items()}
     # dataloader = MultiCamDataloader(dataset, batch_size=1, shuffle=False, num_workers=0)
@@ -63,13 +61,13 @@ def main():
     with torch.no_grad():
         outputs = model(inputs)
 
-    # 4) filter low‑score predictions
+    # Filter out the low scoring predictions
     preds = outputs[0]
     keep = preds["scores"].cpu() >= SCORE_THRESH
     preds["boxes"]  = preds["boxes"][keep]
     preds["labels"] = preds["labels"][keep]
 
-    # 5) visualize ground‑truth vs filtered predictions
+    # Visualize ground‑truth vs filtered predictions
     plot(
       [
         [(inputs["cam0"][0].cpu(), targets["cam0"][0])],
