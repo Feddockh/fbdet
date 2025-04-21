@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from torchvision.transforms import v2
 from torchvision.transforms.v2 import functional as F
 from torchvision.tv_tensors import BoundingBoxes, BoundingBoxFormat
+from tqdm.auto import tqdm
 
 from dataset import MultiCamDataset, SetType
 from loader import MultiCamDataloader
@@ -15,7 +16,7 @@ from utils.visual import plot
 # Parameters
 BASE_DIR      = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR      = os.path.join(BASE_DIR, "erwiam_dataset")
-SETTYPE       = SetType.TRAIN
+SETTYPE       = SetType.VAL
 CAMERAS       = ['cam0']
 CHECKPOINT    = os.path.join(BASE_DIR, "checkpoints", "epoch_10.pth")
 CLASS_NAMES   = ['bg', 'flower', 'shoot', 'maybe', 'leaf']
@@ -39,10 +40,39 @@ def main():
         transforms=transforms
     )
 
+    # Create dataloader
+    dataloader = MultiCamDataloader(
+        dataset,
+        batch_size=1,
+        shuffle=False,
+        num_workers=0
+    )
+
     # Create model and load checkpoint
     model = MultiCamModel(cameras=CAMERAS, num_classes=NUM_CLASSES, pretrained=False)
     model = model.load_checkpoint(CHECKPOINT, num_classes=NUM_CLASSES, map_location=DEVICE)
     model.to(DEVICE).eval()
+
+    print("Starting evaluation ...")
+    with torch.no_grad():
+        for i, (img, target, img_path) in enumerate(tqdm(dataloader, total=len(dataloader), desc="Inference", unit="img")):
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     # Grab a sample
     sample_data = dataset[SAMPLE_INDEX]
@@ -67,10 +97,10 @@ def main():
     # Visualize ground‑truth vs filtered predictions
     plot(
       [
-        [(inputs["cam0"][0].cpu(), targets["cam0"][0]),
-        (inputs["cam0"][0].cpu(), preds)]
+        [(inputs["cam0"][0].cpu(), targets["cam0"][0])],
+        [(inputs["cam0"][0].cpu(), preds)]
       ],
-      col_title=["Ground Truth", "Predictions"],
+      row_title=["Ground Truth", "Predictions"],
       class_names=CLASS_NAMES,
     )
 
