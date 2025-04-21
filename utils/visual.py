@@ -1,4 +1,5 @@
 import os
+import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import torch
@@ -147,3 +148,66 @@ def plot(imgs, row_title=None, col_title=None, class_names=None, save_path=None,
     else:
         plt.show()
     plt.close()
+
+def plot_pr_curves(results, metric, class_names, max_x=1.0, max_y=1.05, save_dir=None):
+    """
+    This function plots the precision-recall curves for each class and an overall curve.
+    
+    Args:
+        results (dict): The results dictionary containing precision and recall data.
+        metric (object): The metric object containing IoU thresholds.
+        class_names (list): List of class names for the dataset.
+        save_path (str): Path to save the plots.
+    """
+    # Precision has the shape [T, R, K, A, M]
+    prec = results["precision"]
+    T, R, K, A, M = prec.shape
+
+    # Get the IoU thresholds used
+    iou_ths = metric.iou_thresholds  # [0.50,0.55,…,0.95]
+
+    # Recall thresholds vector [R,]
+    rec_ths = np.linspace(0.0, 1.0, R) # [0.0,0.01,…,1.0]
+
+    # Plotting over all areas with max detections
+    area_idx = 0
+    mdet_idx = M - 1
+
+    for cls_idx, cls_name in enumerate(class_names):
+        plt.figure(figsize=(6,4))
+        for t, thr in enumerate(iou_ths):
+            # Precision curve at IoU=thr for class
+            p = prec[t, :, cls_idx, area_idx, mdet_idx].cpu().numpy()
+            plt.plot(rec_ths, p, label=f"IoU={thr:.2f}")
+
+        plt.title(f"P–R curve for '{cls_name}' class")
+        plt.xlabel("Recall")
+        plt.ylabel("Precision")
+        plt.ylim(0, max_y)
+        plt.xlim(0, max_x)
+        plt.legend(loc="upper right", fontsize="small")
+        plt.grid(True)
+        plt.tight_layout()
+        if save_dir:
+            os.makedirs(save_dir, exist_ok=True)
+            plt.savefig(os.path.join(save_dir, f"{cls_name}_pr_curves.png"), dpi=300)
+
+    # Also plot overall curve (precision averaged over classes)
+    plt.figure(figsize=(6,4))
+    avg_prec = prec.mean(axis=2) # shape [T, R, A, M]
+    for t, thr in enumerate(iou_ths):
+        p = avg_prec[t, :, area_idx, mdet_idx].cpu().numpy()
+        plt.plot(rec_ths, p, label=f"IoU={thr:.2f}")
+    plt.title("Overall P–R curve")
+    plt.xlabel("Recall")
+    plt.ylabel("Precision")
+    plt.ylim(0, max_y)
+    plt.xlim(0, max_x)
+    plt.legend(loc="upper right", fontsize="small")
+    plt.grid(True)
+    plt.tight_layout()
+    if save_dir:
+        plt.savefig(os.path.join(save_dir, "overall_pr_curves.png"), dpi=300)
+    else:
+        plt.show()
+    plt.close('all')
