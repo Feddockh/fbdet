@@ -74,7 +74,7 @@ class MultiCamTrainer:
             # Move the images and targets to the device
             inputs, targets = {}, {}
             for cam, sample in batch.items():
-                imgs, targs = zip(*sample)
+                imgs, targs, _ = zip(*sample)
                 inputs[cam] = [img.to(self.device) for img in imgs]
                 targets[cam] = [{k: v.to(self.device) for k, v in t.items()} for t in targs]
 
@@ -104,7 +104,7 @@ class MultiCamTrainer:
             for batch in self.val_dataloader:
                 inputs, targets = {}, {}
                 for cam, sample in batch.items():
-                    imgs, targs = zip(*sample)
+                    imgs, targs, _ = zip(*sample)
                     inputs[cam] = [img.to(self.device) for img in imgs]
                     targets[cam] = [{k: v.to(self.device) for k, v in t.items()} for t in targs]
 

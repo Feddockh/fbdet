@@ -151,7 +151,7 @@ class MultiCamDataset(Dataset):
                 img, target = self.transforms(img, target)
 
             # Add the image and annotations to the sample for this camera
-            sample[cam.name] = (img, target)
+            sample[cam.name] = (img, target, img_path)
 
             # Filter out invalid targets
             sample = self._filter_invalid_targets(sample)
@@ -163,14 +163,14 @@ class MultiCamDataset(Dataset):
         Remove any annotation whose box has <=0 area in ANY camera
         """
         for cam in self.cameras:
-            img, target = sample[cam.name]
+            img, target, img_path = sample[cam.name]
             boxes = target['boxes']
             x1, y1, x2, y2 = boxes.unbind(dim=1)
             keep = (x2 - x1) * (y2 - y1) > 0
             boxes = boxes[keep]
             masks = target['masks'][keep] if target['masks'].shape[0] > 0 else target['masks']
             labels = target['labels'][keep]
-            sample[cam.name] = (img, {'boxes': boxes, 'masks': masks, 'labels': labels})
+            sample[cam.name] = (img, {'boxes': boxes, 'masks': masks, 'labels': labels}, img_path)
 
         return sample
     

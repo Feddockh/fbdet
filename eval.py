@@ -15,7 +15,7 @@ from utils.visual import plot, plot_pr_curves
 
 
 # Parameters
-VIS           = False
+VIS           = True
 SEED          = 42
 LOAD_METRICS  = False
 BASE_DIR      = os.path.dirname(os.path.abspath(__file__))
@@ -76,9 +76,9 @@ def main():
                 break
 
             # Move the data to the device
-            inputs, targets = {}, {}
+            inputs, targets, img_paths = {}, {}, {}
             for cam, sample in data.items():
-                imgs, targs = zip(*sample)
+                imgs, targs, img_paths[cam] = zip(*sample)
                 inputs[cam] = [img.to(DEVICE) for img in imgs]
                 targets[cam] = [{k: v.to(DEVICE) for k, v in t.items()} for t in targs]
 
@@ -96,47 +96,49 @@ def main():
 
             # Visualize ground‑truth vs filtered predictions'
             if VIS:
+                img_name = os.path.basename(img_paths["cam0"][0])
                 plot(
                     [(inputs["cam0"][0], preds), (inputs["cam0"][0], targets["cam0"][0])],
                     col_title=["Predictions", "Ground Truth"],
                     class_names=CLASS_NAMES,
-                    save_path=os.path.join(BASE_DIR, "results", f"sample_{i}.png"),
+                    save_path=os.path.join(BASE_DIR, "results", img_name),
                 )
                 if i >= 20:
                     break
 
     # Compute and save the mean average precision results
-    print("Computing metrics ...")
-    os.makedirs(os.path.join(BASE_DIR, "results"), exist_ok=True)
-    if LOAD_METRICS:
-        results = torch.load(os.path.join(BASE_DIR, "results", "eval_results.pth"))
-    else:
-        results = map_metric.compute()
-    torch.save(results, os.path.join(BASE_DIR, "results", "eval_results.pth"))
-    print("Evaluation Metrics:")
+    if not VIS:
+        print("Computing metrics ...")
+        os.makedirs(os.path.join(BASE_DIR, "results"), exist_ok=True)
+        if LOAD_METRICS:
+            results = torch.load(os.path.join(BASE_DIR, "results", "eval_results.pth"))
+        else:
+            results = map_metric.compute()
+        torch.save(results, os.path.join(BASE_DIR, "results", "eval_results.pth"))
+        print("Evaluation Metrics:")
 
-    print(f"mAP@[.50:.95]        = {results['map']:.4f}")
-    print(f"mAP@.50              = {results['map_50']:.4f}")
-    print(f"mAP@.75              = {results['map_75']:.4f}")
-    print(f"mAP@.50:.95 (small)  = {results['map_small']:.4f}")
-    print(f"mAP@.50:.95 (medium) = {results['map_medium']:.4f}")
-    print(f"mAP@.50:.95 (large)  = {results['map_large']:.4f}")
-    print(f"mAR@1                = {results['mar_1']:.4f}")
-    print(f"mAR@10               = {results['mar_10']:.4f}")
-    print(f"mAR@100              = {results['mar_100']:.4f}")
-    print(f"mAR@100 (small)      = {results['mar_small']:.4f}")
-    print(f"mAR@100 (medium)     = {results['mar_medium']:.4f}")
-    print(f"mAR@100 (large)      = {results['mar_large']:.4f}")
+        print(f"mAP@[.50:.95]        = {results['map']:.4f}")
+        print(f"mAP@.50              = {results['map_50']:.4f}")
+        print(f"mAP@.75              = {results['map_75']:.4f}")
+        print(f"mAP@.50:.95 (small)  = {results['map_small']:.4f}")
+        print(f"mAP@.50:.95 (medium) = {results['map_medium']:.4f}")
+        print(f"mAP@.50:.95 (large)  = {results['map_large']:.4f}")
+        print(f"mAR@1                = {results['mar_1']:.4f}")
+        print(f"mAR@10               = {results['mar_10']:.4f}")
+        print(f"mAR@100              = {results['mar_100']:.4f}")
+        print(f"mAR@100 (small)      = {results['mar_small']:.4f}")
+        print(f"mAR@100 (medium)     = {results['mar_medium']:.4f}")
+        print(f"mAR@100 (large)      = {results['mar_large']:.4f}")
 
-    # Plot the precision-recall curves
-    plot_pr_curves(
-        results = results,
-        metric = map_metric,
-        class_names = CLASS_NAMES[1:],
-        max_x = 1.05,
-        max_y = 1.05,
-        save_dir = os.path.join(BASE_DIR, "results")
-    )
+        # Plot the precision-recall curves
+        plot_pr_curves(
+            results = results,
+            metric = map_metric,
+            class_names = CLASS_NAMES[1:],
+            max_x = 1.05,
+            max_y = 1.05,
+            save_dir = os.path.join(BASE_DIR, "results")
+        )
 
 if __name__ == "__main__":
     main()
