@@ -18,6 +18,10 @@ def multicam_collate_fn(samples):
 
 class MultiCamDataloader(DataLoader):
     def __init__(self, dataset, batch_size=2, shuffle=False, num_workers=2):
+        """
+        Custom DataLoader for MultiCamDataset that uses a custom collate function to handle
+        the multi-camera data structure.
+        """
         super().__init__(dataset, batch_size=batch_size, shuffle=shuffle, 
                          num_workers=num_workers, collate_fn=multicam_collate_fn)
 

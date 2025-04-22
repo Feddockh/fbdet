@@ -19,7 +19,7 @@ def main():
 
     # Define transforms
     transforms = v2.Compose([
-        v2.Resize((1024, 1024), antialias=True), # Higher for finer details
+        # v2.Resize((1024, 1024), antialias=True), # Higher for finer details
         v2.RandomHorizontalFlip(p=0.5),
     ])
 
