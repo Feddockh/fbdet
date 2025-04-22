@@ -7,6 +7,8 @@ from torchvision.utils import draw_bounding_boxes, draw_segmentation_masks
 from torchvision.transforms.v2 import functional as F
 from torchvision.tv_tensors import BoundingBoxes
 from PIL import Image
+from typing import List, Optional, Dict, Tuple
+
 
 color_palette = [
     "black", "red", "green", "blue", "cyan", "magenta", "yellow",
@@ -147,6 +149,30 @@ def plot(imgs, row_title=None, col_title=None, class_names=None, save_path=None,
         plt.savefig(save_path, dpi=300)
     else:
         plt.show()
+    plt.close()
+
+def plot_loss(train_losses: List[float], val_losses: Optional[List[float]] = None, 
+              save_path: str = "loss_plot.png") -> None:
+    """
+    Plot training and validation loss curves and save to disk.
+
+    Args:
+        train_losses (list): List of training losses per epoch.
+        val_losses (list, optional): List of validation losses per epoch.
+        save_path (str): Path to save the plot.
+    """
+    plt.figure()
+    epochs = list(range(1, len(train_losses) + 1))
+    plt.plot(epochs, train_losses, label="Train Loss")
+    if val_losses is not None:
+        plt.plot(epochs, val_losses, label="Validation Loss")
+    plt.xlabel("Epoch")
+    plt.ylabel("Loss")
+    plt.title("Loss Curve")
+    plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
+    plt.savefig(save_path)
     plt.close()
 
 def plot_pr_curves(results, metric, class_names, max_x=1.0, max_y=1.05, save_dir=None):
